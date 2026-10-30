@@ -85,7 +85,7 @@ function App() {
         
         
   return(
-    <div>
+    <main className="container">
       <h1>Test Header</h1>
       
       <div className='FavoriteCheck'>
@@ -101,7 +101,9 @@ function App() {
         {fileteredList.map((item) =>{
           return(
             <div key={item.filename} className='Unifile'>
-              <img src={item.url} width={200} />
+              {item.filename.endsWith('.mp4')===false? 
+               <img src={item.url} />: <video src={item.url}  controls />
+              }
               <p>{item.filename}</p>
               <button onClick={()=> FavoriteHandler(item.filename, item.is_favorite)}>
                 {item.is_favorite === 1 ? "★ Favorited" : "☆ Favorite"}
@@ -116,7 +118,7 @@ function App() {
           )
         })}
       </div>
-    </div>
+    </main>
   );
 
  
