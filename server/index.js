@@ -3,10 +3,20 @@ import cors from 'cors'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import router from './routes/media.js'
+import db from './DataBase.js'
+import multer from 'multer';
+
 
 
 const PORT = 3001;
 const app= express();
+
+const storage = multer.diskStorage({
+    destination:(req, file ,cb)=> cb(null, './media'),
+    filename: (req ,file ,cb)=>cb(null, file.originalname)
+});
+
+const upload =multer({storage : storage});
 
 //to get the current directory name in ES modules, we need to use the fileURLToPath and path.dirname methods
 
@@ -25,6 +35,16 @@ app.use(cors());
 app.use(express.json());
 
 app.use('/api/media', router);
+
+app.post('/api/media/upload', upload.single('file'), (req,res)=>{
+    if(!req.file) return res.json({success:false, error:"No File"});
+    const Nrow=db.prepare("INSERT INTO media_metadata (filename, is_favorite, tags) values (?, 0, '[]')");
+    Nrow.run(req.file?.originalname);
+
+    res.json({success:true});
+
+
+})
 
 
 app.listen(PORT, ()=>{
