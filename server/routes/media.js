@@ -19,27 +19,30 @@ router.get('/', async(req, res)=> {
     //we are using the fs.promises.readdir method to read the contents of the media directory, it returns an array of filenames in the directory
     try{
         const files =await fs.readdir(MEDIA_DIR);
-        const statment= db.prepare('select is_favorite, tags FROM media_metadata WHERE filename=?');
+        const statment= db.prepare('select is_favorite, tags, channel FROM media_metadata WHERE filename=?');
 
         //we are mapping the files to an array of objects containing the filename and the URL to access the file so it looks simpler and takes you directly to the file when you click on it in the browser
         let MediaFilesMapping=files.map((x)=> {
 
-            let favoriteStatus, mediaTags;
+            let favoriteStatus, mediaTags, channel;
             const row= statment.get(x);
 
             if(row){ 
                 favoriteStatus=row.is_favorite;
-                mediaTags=JSON.parse(row.tags);}
+                mediaTags=JSON.parse(row.tags);
+                channel=row.channel;}
             else{
                 favoriteStatus=0;
                 mediaTags=[];
+                channel="All";
             }
 
             return {
                 filename: x,
                 url : `http://localhost:3001/media/${x}`,
                 is_favorite: favoriteStatus,
-                tags: mediaTags
+                tags: mediaTags,
+                channel: channel
 
             }
             
@@ -100,6 +103,30 @@ router.post('/tags',(req,res)=>{
         }
 
         res.json({success:true, message:"tags saved"})
+    }
+    catch(error){
+        console.error(error);
+        res.status(500).json({error: "Failed to update media metadata"})
+    }
+})
+
+router.post('/channel', (req,res)=>{
+    try{
+        const {filename , newChannel}= req.body;
+
+        const statment= db.prepare('SELECT * from media_metadata WHERE filename=?');
+        const existingFile=statment.get(filename);
+
+        if(existingFile!==undefined){
+            const updateStatment= db.prepare('UPDATE media_metadata SET channel=? WHERE filename=?');
+            updateStatment.run(newChannel,filename);
+        }
+        else{
+            const insertStatment= db.prepare('INSERT INTO media_metadata (filename,channel) VALUES (?,?)');
+            insertStatment.run(filename,newChannel)
+        }
+
+        res.json({success:true, message:"channel saved"});
     }
     catch(error){
         console.error(error);

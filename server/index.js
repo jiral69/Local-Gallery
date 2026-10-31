@@ -38,8 +38,8 @@ app.use('/api/media', router);
 
 app.post('/api/media/upload', upload.single('file'), (req,res)=>{
     if(!req.file) return res.json({success:false, error:"No File"});
-    const Nrow=db.prepare("INSERT INTO media_metadata (filename, is_favorite, tags) values (?, 0, '[]')");
-    Nrow.run(req.file?.originalname);
+    const Nrow=db.prepare("INSERT INTO media_metadata (filename, is_favorite, tags, channel) values (?, 0, '[]', ?)");
+    Nrow.run(req.file?.originalname),req.body.channel || 'All';
 
     res.json({success:true});
 
