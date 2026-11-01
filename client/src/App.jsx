@@ -9,6 +9,9 @@ function App() {
   const [selectedIndex , setSelectedIndex]=useState(null);
   const [currentChannel, setCurrentChannel] = useState('Discover');
   const [channelsList, setChannelsList]=useState(['All']);
+  const [activePrompt, setActivePrompt] = useState(null); 
+  const [promptText, setPromptText] = useState('');
+  const [sortOrder, setSortOrder] = useState('newest');
  
 
     async function FavoriteHandler(filename , currentFavorite){
@@ -59,10 +62,9 @@ function App() {
       setMediaList([...mediaList, newMedia]);
     }
 
-    async function TagsHandler(filename, currentTags){
-      const newTag=prompt("enter a new tag:");
-      if(!newTag) return;
-      const updatedTags=[...currentTags, newTag];
+    async function TagsHandler(filename, currentTags,promptText){
+      if(!promptText) return;
+      const updatedTags=[...currentTags, promptText];
       await fetch('http://localhost:3001/api/media/tags',{
         method:'POST',
         headers:{
@@ -109,11 +111,10 @@ function App() {
       }))
 
     }
-    function addChannel(){
-      const newChan=prompt("enter channel name");
-      if(!newChan) return;
-      if(channelsList.includes(newChan)) return;
-      const updateChannel=[...channelsList, newChan];
+    function addChannel(promptText){
+      if(!promptText) return;
+      if(channelsList.includes(promptText)) return;
+      const updateChannel=[...channelsList, promptText];
       setChannelsList(updateChannel);
     }
     async function ChannelHandler(filename, newChannel){
@@ -155,9 +156,8 @@ function App() {
       setSelectedIndex(null);
     }
 
-    async function UrlDownloadHandler() {
-      const newUrl=prompt("enter link :");
-      if(!newUrl) return;
+    async function UrlDownloadHandler(promptText) {
+      if(!promptText) return;
 
       const response =await fetch('http://localhost:3001/api/media/download-url',{
         method:'POST',
@@ -165,7 +165,7 @@ function App() {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          url:newUrl,
+          url:promptText,
           channel:currentChannel
         })
 
@@ -188,6 +188,23 @@ function App() {
 
 
 
+    }
+
+    async function PromptSubmitHandler(){
+      if(!promptText.trim()) return;
+
+      if(activePrompt==='channel'){
+        addChannel(promptText.trim());
+      }
+      else if(activePrompt==='download'){
+        await UrlDownloadHandler(promptText.trim());
+      }
+      else if(activePrompt==='tag'){
+        await TagsHandler(activeItem.filename,activeItem.tags,promptText.trim())
+      }
+
+      setPromptText('');
+      setActivePrompt(null);
     }
       
 
@@ -231,38 +248,61 @@ function App() {
             item.tags?.some((tag) => tag.toLowerCase().includes(searchQuery.toLocaleLowerCase()));
     });
 
-    const fileteredList = fileteredListByTags.filter((item) => {
+    let fileteredList = fileteredListByTags.filter((item) => {
       if (currentChannel === 'Discover') return true; 
       return currentChannel === 'All' || item.channel === currentChannel;
     });
 
+    // Apply the correct sorting transformation
+    if (sortOrder === 'a-z') {
+      fileteredList.sort((a, b) => a.filename.localeCompare(b.filename));
+    } else if (sortOrder === 'z-a') {
+      fileteredList.sort((a, b) => b.filename.localeCompare(a.filename));
+    } else if (sortOrder === 'newest') {
+      fileteredList.reverse(); // Simply flips the naturally ordered database array
+    }
+
     const activeItem= selectedIndex!==null? fileteredList[selectedIndex] : null;  
 
     useEffect(() => {
-  // Only listen for keys if the lightbox is actually open
-  if (selectedIndex === null) return;
+    // Only listen for keys if the lightbox is actually open
+      if (selectedIndex === null || activePrompt !== null) return;
 
-  const handleKeyDown = (e) => {
-    if (e.key === "Escape") {
-      setSelectedIndex(null);
-    } else if (e.key === "ArrowRight" && selectedIndex < fileteredList.length - 1) {
-      setSelectedIndex(selectedIndex + 1);
-    } else if (e.key === "ArrowLeft" && selectedIndex > 0) {
-      setSelectedIndex(selectedIndex - 1);
-    }
-  };
+      const handleKeyDown = (e) => {
+        if (e.key === "Escape") {
+          setSelectedIndex(null);
+        } else if (e.key === "ArrowRight" && selectedIndex < fileteredList.length - 1) {
+          setSelectedIndex(selectedIndex + 1);
+        } else if (e.key === "ArrowLeft" && selectedIndex > 0) {
+          setSelectedIndex(selectedIndex - 1);
+        }
+      };
 
-  window.addEventListener("keydown", handleKeyDown);
+      window.addEventListener("keydown", handleKeyDown);
 
-  return () => window.removeEventListener("keydown", handleKeyDown);
-}, [selectedIndex, fileteredList.length]);
+      return () => window.removeEventListener("keydown", handleKeyDown);
+    }, [selectedIndex, fileteredList.length, activePrompt]);
         
         
   return (
     <main className="container">
       <h1>Local Gallery</h1>
       
+      {/*The search bar and sort */}
       <div className='FavoriteCheck'>
+        <input 
+        type="text"
+        placeholder='Search name or tag'
+        value={searchQuery}
+        onChange={(e) => setSearchQuery(e.target.value)} 
+      />
+
+      <select value={sortOrder} onChange={(e) => setSortOrder(e.target.value)} className="sort-select">
+        <option value="newest">Newest First</option>
+        <option value="oldest">Oldest First</option>
+        <option value="a-z">Alphabetical (A-Z)</option>
+        <option value="z-a">Alphabetical (Z-A)</option>
+      </select>
         <button onClick={() => setShowFavorite(!showFavorite)}>
           {showFavorite ? " Show All Images" : "★ Show Favorites"}
         </button>
@@ -304,13 +344,11 @@ function App() {
                 </button>
               )
             })}
-            
-            {/* I removed the duplicate map loop that was causing double channels here! */}
-            
           </div>
-          <button onClick={() => addChannel()} className="add-channel-btn">+ Add Channel</button>
 
-          <button onClick={UrlDownloadHandler} style={{ marginTop: '10px' }} className="add-channel-btn">Download Link</button>
+          <button onClick={()=>setActivePrompt('channel')} className="add-channel-btn">+ Add Channel</button>
+
+          <button onClick={()=>setActivePrompt('download')} style={{ marginTop: '10px' }} className="add-channel-btn">Download Link</button>
         </aside>
       </div>
 
@@ -344,7 +382,9 @@ function App() {
         </div>
       )}
 
-      {/* Lightbox stays exactly as you had it */}
+      
+
+      {/* Lightbox Overlay */}
       {activeItem && (
         <div className="lightbox-overlay">
           {/* Left 75%: Media Stage & Navigation */}
@@ -399,8 +439,26 @@ function App() {
                   </span>
                 ))}
               </div>
-              <button onClick={() => TagsHandler(activeItem.filename, activeItem.tags)}>+ Add Tag</button>
+              <button onClick={()=>setActivePrompt('tag')}>+ Add Tag</button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/*Active prompt overlay */}
+      {activePrompt && (
+        <div className="lightbox-overlay">
+          <div className="prompt-box" style={{ background: '#18181b', padding: '20px', borderRadius: '8px' }}>
+            <h3>Enter {activePrompt}</h3>
+            
+            <input 
+              type="text" 
+              value={promptText} 
+              onChange={(e) => setPromptText(e.target.value)} 
+            />
+            
+            <button onClick={PromptSubmitHandler}>Submit</button>
+            <button onClick={() => { setActivePrompt(null); setPromptText(''); }}>Cancel</button>
           </div>
         </div>
       )}

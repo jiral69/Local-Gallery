@@ -24,10 +24,23 @@ router.get('/', async(req, res)=> {
     //we are using the fs.promises.readdir method to read the contents of the media directory, it returns an array of filenames in the directory
     try{
         const files =await fs.readdir(MEDIA_DIR);
+                    // 1. Get the creation time for every file
+            const filesWithTime = await Promise.all(
+            files.map(async (file) => {
+                const stat = await fs.stat(`${MEDIA_DIR}/${file}`);
+                return { name: file, time: stat.birthtimeMs };
+            })
+            );
+
+            // 2. Sort them oldest-first (chronological)
+            filesWithTime.sort((a, b) => a.time - b.time);
+
+            // 3. Extract just the names back into a flat array
+            const sortedFiles = filesWithTime.map(f => f.name);
         const statment= db.prepare('select is_favorite, tags, channel FROM media_metadata WHERE filename=?');
 
         //we are mapping the files to an array of objects containing the filename and the URL to access the file so it looks simpler and takes you directly to the file when you click on it in the browser
-        let MediaFilesMapping=files.map((x)=> {
+        let MediaFilesMapping=sortedFiles.map((x)=> {
 
             let favoriteStatus, mediaTags, channel;
             const row= statment.get(x);
