@@ -57,6 +57,23 @@ router.get('/', async(req, res)=> {
     }
 })
 
+router.post('/delete', async(req,res)=>{
+    try{
+        const {filename}=req.body;
+
+        let filepath=path.join(MEDIA_DIR,filename);
+
+        await fs.unlink(filepath);
+
+        db.prepare('DELETE FROM media_metadata WHERE filename=?').run(filename);
+
+        res.json({success:true, message:"file detelted"});
+    }
+    catch(error){
+        res.status(500).json({error: "Failed to delete from media folder"})
+    }
+})
+
 //this works to update and check is the image or gif was favorited
 router.post('/favorite',(req,res)=>{
     try{

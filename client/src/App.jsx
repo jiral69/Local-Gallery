@@ -139,6 +139,21 @@ function App() {
         }
       }))
     }
+
+    async function DeleteHandler(filename){
+      if(!window.confirm("are you sure you want to delete this file?")) return;
+
+      await fetch('http://localhost:3001/api/media/delete',{
+        method:'POST',
+        headers:{
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({filename:filename})
+      });
+
+      setMediaList(mediaList.filter((item)=> item.filename!==filename));
+      setSelectedIndex(null);
+    }
       
 
   useEffect(()=>{
@@ -283,6 +298,7 @@ function App() {
       
     {/* Right 25%: Inspector Sidebar */}
     <div className="lightbox-sidebar">
+    <button onClick={() => DeleteHandler(activeItem.filename)}>Delete File</button>
       <select onChange={(e)=> ChannelHandler(activeItem.filename, e.target.value)} className='Channel-select' value={activeItem.channel}>
         {channelsList.map((item)=>{
           
