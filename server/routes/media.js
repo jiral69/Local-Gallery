@@ -3,12 +3,17 @@ import fs from 'fs/promises'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import db from '../DataBase.js'
+import { execFile } from 'child_process'
+import util from 'util'
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const MEDIA_DIR = path.join(__dirname,'..', 'media');
 
 const router= express.Router();
+
+
+const execFilePromise = util.promisify(execFile);
 
 
 
@@ -151,4 +156,28 @@ router.post('/channel', (req,res)=>{
     }
 })
 
+router.post('/download-url', async(req,res)=>{
+    try
+    {
+        const {url , channel}=req.body
+        const filename="video_" + Date.now() + ".mp4";
+
+        const filepath= path.join(MEDIA_DIR,filename);
+
+        await execFilePromise('yt-dlp',[
+            '-S', 'ext:mp4:m4a,vcodec:h264',
+            '--merge-output-format', 'mp4',
+            '-o', filepath,
+            url
+        ]);
+
+        db.prepare("INSERT INTO media_metadata (filename, is_favorite, tags, channel) VALUES (?, 0, '[]', ?)").run(filename, channel);
+
+        res.json({success:true, filename:filename})}
+        catch(error){
+            console.error(error);
+            res.status(500).json({error: "Failed to add link"});
+        }
+
+})
 export default router;

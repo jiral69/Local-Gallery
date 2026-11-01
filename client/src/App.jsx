@@ -7,7 +7,7 @@ function App() {
   const [showFavorite , setShowFavorite]=useState(false);
   const [searchQuery , setSearchQuery]=useState("");
   const [selectedIndex , setSelectedIndex]=useState(null);
-  const [currentChannel, setCurrentChannel]=useState('All');
+  const [currentChannel, setCurrentChannel] = useState('Discover');
   const [channelsList, setChannelsList]=useState(['All']);
  
 
@@ -154,6 +154,41 @@ function App() {
       setMediaList(mediaList.filter((item)=> item.filename!==filename));
       setSelectedIndex(null);
     }
+
+    async function UrlDownloadHandler() {
+      const newUrl=prompt("enter link :");
+      if(!newUrl) return;
+
+      const response =await fetch('http://localhost:3001/api/media/download-url',{
+        method:'POST',
+        headers:{
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          url:newUrl,
+          channel:currentChannel
+        })
+
+    });
+
+    const data=await response.json();
+
+    if(data.success){
+      const newMedia={
+        filename:data.filename,
+        is_favorite:0,
+        tags:[],
+        url:`http://localhost:3001/media/${data.filename}`,
+        channel:currentChannel
+      };
+
+      setMediaList([...mediaList,newMedia]);
+    }
+
+
+
+
+    }
       
 
   useEffect(()=>{
@@ -164,8 +199,11 @@ function App() {
 
         setMediaList(data); 
 
+        setMediaList(data);
+
         
-        const uniqueChannels = [...new Set(['All', ...data.map(item => item.channel).filter(Boolean)])];
+        
+        const uniqueChannels = [...new Set(['All', ...data.map(item => item.channel?.trim()).filter(Boolean)])];
         setChannelsList(uniqueChannels);
       }
       catch(error){
@@ -185,13 +223,18 @@ function App() {
     console.log(mediaList);
 
 
-    const fileteredListByFav=showFavorite? mediaList.filter((item)=>item.is_favorite===1): mediaList;
-    const fileteredListByTags=fileteredListByFav.filter((item)=>{
-      return item.filename.toLocaleLowerCase().includes(searchQuery.toLocaleLowerCase()) || item.tags?.some((tag)=>{return tag.toLowerCase().includes(searchQuery.toLocaleLowerCase())});
+
+    const fileteredListByFav = showFavorite ? mediaList.filter((item) => item.is_favorite === 1) : mediaList;
+
+    const fileteredListByTags = fileteredListByFav.filter((item) => {
+      return item.filename.toLocaleLowerCase().includes(searchQuery.toLocaleLowerCase()) || 
+            item.tags?.some((tag) => tag.toLowerCase().includes(searchQuery.toLocaleLowerCase()));
     });
-    const fileteredList=fileteredListByTags.filter((item)=>{
-      return currentChannel==='All'|| item.channel===currentChannel;
-    })
+
+    const fileteredList = fileteredListByTags.filter((item) => {
+      if (currentChannel === 'Discover') return true; 
+      return currentChannel === 'All' || item.channel === currentChannel;
+    });
 
     const activeItem= selectedIndex!==null? fileteredList[selectedIndex] : null;  
 
@@ -215,16 +258,20 @@ function App() {
 }, [selectedIndex, fileteredList.length]);
         
         
-  return(
+  return (
     <main className="container">
       <h1>Local Gallery</h1>
       
       <div className='FavoriteCheck'>
-        <button onClick={()=>setShowFavorite(!showFavorite)}>{showFavorite  ? " Show All Images" : "★ Show Favorites"}</button>
-        <input type="text"
-            placeholder='Search name or tag'
-            value={searchQuery}
-            onChange={(e)=>setSearchQuery(e.target.value)} />
+        <button onClick={() => setShowFavorite(!showFavorite)}>
+          {showFavorite ? " Show All Images" : "★ Show Favorites"}
+        </button>
+        <input 
+          type="text"
+          placeholder='Search name or tag'
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)} 
+        />
         <input 
           type="file" 
           accept="image/*,video/mp4" 
@@ -234,105 +281,123 @@ function App() {
         <aside className='Channel-sidebar'>
           <h3>Channels</h3>
           <div className='Channel-list'>
-            {channelsList.map((item)=>{
-              return(
-                <button key={item} onClick={()=>setCurrentChannel(item)} className='channel-btn'>{item}</button>
+            <button 
+              onClick={() => setCurrentChannel('Discover')} 
+              className={currentChannel === 'Discover' ? 'channel-btn active' : 'channel-btn'}
+            >
+              🎲 Discover
+            </button>
+            
+            {/* I removed the duplicate map loop that was causing double channels here! */}
+            {channelsList.map((item) => {
+              return (
+                <button 
+                  key={item} 
+                  onClick={() => setCurrentChannel(item)} 
+                  className={currentChannel === item ? 'channel-btn active' : 'channel-btn'}
+                >
+                  {item}
+                </button>
               )
             })}
           </div>
-          <button onClick={()=>addChannel()} className="add-channel-btn" >+ Add Channel</button>
+          <button onClick={() => addChannel()} className="add-channel-btn">+ Add Channel</button>
+
+          <button onClick={UrlDownloadHandler} style={{ marginTop: '10px' }} className="add-channel-btn">Download Link</button>
         </aside>
       </div>
 
-
-      <div className='IF'>
-        {fileteredList.map((item,index) =>{
-          return(
-            <div onClick={()=>setSelectedIndex(index)} key={item.filename} className='Unifile'>
-              {item.filename.endsWith('.mp4')===false? 
-               <img src={item.url} />: <video src={item.url}  controls />
-              }
-              <p>{item.filename}</p>
-              <button 
-                className="card-star-btn"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  FavoriteHandler(item.filename, item.is_favorite);
-                }}
->
-  {item.is_favorite === 1 ? "★" : "☆"}
-</button>                        
-            </div>
-          )
-        })}
-      </div>
-
-
-      {activeItem && (
-  <div className="lightbox-overlay">
-      
-    {/* Left 75%: Media Stage & Navigation */}
-    <div className="lightbox-stage">
-      <button 
-        className="nav-btn prev-btn" 
-        onClick={() => setSelectedIndex(selectedIndex - 1)}
-        disabled={selectedIndex === 0}
-      >
-        &#10094;
-      </button>
-
-      {activeItem.filename.endsWith('.mp4') === false ? (
-        <img src={activeItem.url} />
+      {/* Conditionally render Welcome Screen OR the Image Grid */}
+      {currentChannel === 'Discover' ? (
+        <div style={{ textAlign: 'center', marginTop: '20vh', color: '#a1a1aa' }}>
+          <h2>Welcome to Local Gallery</h2>
+          <p>Select a channel from the left sidebar to start browsing.</p>
+        </div>
       ) : (
-        <video src={activeItem.url} controls autoPlay />
+        <div className='IF'>
+          {fileteredList.map((item, index) => {
+            return (
+              <div onClick={() => setSelectedIndex(index)} key={item.filename} className='Unifile'>
+                {item.filename.endsWith('.mp4') === false ? 
+                  <img src={item.url} /> : <video src={item.url} controls />
+                }
+                <p>{item.filename}</p>
+                <button 
+                  className="card-star-btn"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    FavoriteHandler(item.filename, item.is_favorite);
+                  }}
+                >
+                  {item.is_favorite === 1 ? "★" : "☆"}
+                </button>                        
+              </div>
+            )
+          })}
+        </div>
       )}
 
-      <button 
-        className="nav-btn next-btn" 
-        onClick={() => setSelectedIndex(selectedIndex + 1)}
-        disabled={selectedIndex === fileteredList.length - 1}
-      >
-        &#10095;
-      </button>
-    </div>
-      
-    {/* Right 25%: Inspector Sidebar */}
-    <div className="lightbox-sidebar">
-    <button onClick={() => DeleteHandler(activeItem.filename)}>Delete File</button>
-      <select onChange={(e)=> ChannelHandler(activeItem.filename, e.target.value)} className='Channel-select' value={activeItem.channel}>
-        {channelsList.map((item)=>{
-          
-          return <option key={item} value={item}>{item}</option>
-        
-        })}
-      </select>
-      <div className="sidebar-header">
-        <h3>{activeItem.filename}</h3>
-        <button className="close-btn" onClick={() => setSelectedIndex(null)}>✕</button>
-    </div>
-      {/*Zoomed in page Favortie button */}
-      <button onClick={() => FavoriteHandler(activeItem.filename, activeItem.is_favorite)}>
-        {activeItem.is_favorite === 1 ? "★ Favorited" : "☆ Favorite"}
-      </button>
+      {/* Lightbox stays exactly as you had it */}
+      {activeItem && (
+        <div className="lightbox-overlay">
+          {/* Left 75%: Media Stage & Navigation */}
+          <div className="lightbox-stage">
+            <button 
+              className="nav-btn prev-btn" 
+              onClick={() => setSelectedIndex(selectedIndex - 1)}
+              disabled={selectedIndex === 0}
+            >
+              &#10094;
+            </button>
 
-      <div className="sidebar-tags">
-        <h4>Tags</h4>
-        {/*code that handles tags */}
-        <div>
-          {activeItem.tags?.map((Itag) => (
-            <span key={Itag} className="tag-badge">{Itag}
-              <button className="remove-tag-btn" onClick={()=>RemoveTag(activeItem.filename, activeItem.tags, Itag)}>x</button>
-            </span>
-          ))}
-      </div>
-        <button onClick={() => TagsHandler(activeItem.filename, activeItem.tags)}>+ Add Tag</button>
-      </div>
-    </div>
-  </div>
-)}
+            {activeItem.filename.endsWith('.mp4') === false ? (
+              <img src={activeItem.url} />
+            ) : (
+              <video src={activeItem.url} controls autoPlay />
+            )}
+
+            <button 
+              className="nav-btn next-btn" 
+              onClick={() => setSelectedIndex(selectedIndex + 1)}
+              disabled={selectedIndex === fileteredList.length - 1}
+            >
+              &#10095;
+            </button>
+          </div>
+            
+          {/* Right 25%: Inspector Sidebar */}
+          <div className="lightbox-sidebar">
+            <button onClick={() => DeleteHandler(activeItem.filename)}>Delete File</button>
+            <select onChange={(e)=> ChannelHandler(activeItem.filename, e.target.value)} className='Channel-select' value={activeItem.channel}>
+              {channelsList.map((item) => {
+                return <option key={item} value={item}>{item}</option>
+              })}
+            </select>
+            <div className="sidebar-header">
+              <h3>{activeItem.filename}</h3>
+              <button className="close-btn" onClick={() => setSelectedIndex(null)}>✕</button>
+            </div>
+            {/*Zoomed in page Favortie button */}
+            <button onClick={() => FavoriteHandler(activeItem.filename, activeItem.is_favorite)}>
+              {activeItem.is_favorite === 1 ? "★ Favorited" : "☆ Favorite"}
+            </button>
+
+            <div className="sidebar-tags">
+              <h4>Tags</h4>
+              {/*code that handles tags */}
+              <div>
+                {activeItem.tags?.map((Itag) => (
+                  <span key={Itag} className="tag-badge">{Itag}
+                    <button className="remove-tag-btn" onClick={() => RemoveTag(activeItem.filename, activeItem.tags, Itag)}>x</button>
+                  </span>
+                ))}
+              </div>
+              <button onClick={() => TagsHandler(activeItem.filename, activeItem.tags)}>+ Add Tag</button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
-
- 
 }
 export default App
