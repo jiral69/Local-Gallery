@@ -287,19 +287,26 @@ function App() {
             >
               🎲 Discover
             </button>
-            
-            {/* I removed the duplicate map loop that was causing double channels here! */}
             {channelsList.map((item) => {
+              // Calculate how many items belong to this specific channel
+              const count = item === 'All' 
+                ? mediaList.length 
+                : mediaList.filter(media => media.channel === item).length;
+
               return (
                 <button 
                   key={item} 
                   onClick={() => setCurrentChannel(item)} 
                   className={currentChannel === item ? 'channel-btn active' : 'channel-btn'}
                 >
-                  {item}
+                  <span className="channel-name">{item}</span>
+                  <span className="channel-count">{count}</span>
                 </button>
               )
             })}
+            
+            {/* I removed the duplicate map loop that was causing double channels here! */}
+            
           </div>
           <button onClick={() => addChannel()} className="add-channel-btn">+ Add Channel</button>
 

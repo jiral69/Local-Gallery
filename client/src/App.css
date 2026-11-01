@@ -424,3 +424,20 @@ body {
 .remove-tag-btn:hover {
   color: #ef4444;
 }
+
+.channel-btn {
+  /* Add these to your existing .channel-btn class */
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.channel-count {
+  background-color: #27272a;
+  color: #a1a1aa;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: bold;
+}
