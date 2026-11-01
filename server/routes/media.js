@@ -6,9 +6,12 @@ import db from '../DataBase.js'
 import { execFile } from 'child_process'
 import util from 'util'
 
+
+const appDataPath = process.env.APPDATA;
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const MEDIA_DIR = path.join(__dirname,'..', 'media');
+const MEDIA_DIR = path.join(appDataPath, 'LocalGallery', 'media');
 
 const router= express.Router();
 
@@ -28,7 +31,7 @@ router.get('/', async(req, res)=> {
             const filesWithTime = await Promise.all(
             files.map(async (file) => {
                 const stat = await fs.stat(`${MEDIA_DIR}/${file}`);
-                return { name: file, time: stat.birthtimeMs };
+                return { name: file, time: stat.mtimeMs };
             })
             );
 

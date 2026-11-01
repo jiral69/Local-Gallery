@@ -1,15 +1,18 @@
-import express from 'express'
-import cors from 'cors'
-import path from 'path'
-import { fileURLToPath } from 'url'
-import router from './routes/media.js'
-import db from './DataBase.js'
+import express from 'express';
+import cors from 'cors';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import router from './routes/media.js';
+import db from './DataBase.js';
 import multer from 'multer';
+import fs from 'fs';
 
 
 
 const PORT = 3001;
 const app= express();
+
+const appDataPath = process.env.APPDATA;
 
 const storage = multer.diskStorage({
     destination:(req, file ,cb)=> cb(null, MEDIA_DIR),
@@ -25,7 +28,11 @@ const __filename = fileURLToPath(import.meta.url);
 //this one takes the full path and chops off index.js leaving C:\programming\Local Gallery\server
 const __dirname = path.dirname(__filename);
 //this one works depending on the operating system, so it doesnt crash when we switch to some diffrent os
-const MEDIA_DIR = path.join(__dirname, 'media');
+const MEDIA_DIR = path.join(appDataPath, 'LocalGallery', 'media');
+
+if (!fs.existsSync(MEDIA_DIR)) {
+  fs.mkdirSync(MEDIA_DIR, { recursive: true });
+}
 
 app.use(express.static(path.join(__dirname, 'react-build')));
 

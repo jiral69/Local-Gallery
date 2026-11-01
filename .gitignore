@@ -1,5 +1,5 @@
 node_modules/
-.env
-server/media/*
-!server/media/.gitkeep
+dist/
+server/dist/
+client/dist/
 *.db

@@ -1,6 +1,18 @@
-import {DatabaseSync} from 'node:sqlite'
+import Database from 'better-sqlite3';
+import path from 'path';
+import fs from 'fs';
 
-const db= new DatabaseSync('gallery.db');
+
+const appDataPath = process.env.APPDATA;
+const galleryFolder = path.join(appDataPath, 'LocalGallery');
+
+if (!fs.existsSync(galleryFolder)) {
+  fs.mkdirSync(galleryFolder, { recursive: true });
+}
+
+const dbPath = path.join(galleryFolder, 'gallery.db');
+const db = new Database(dbPath);
+
 
 const createTableQuery=`
     CREATE TABLE IF NOT EXISTS media_metadata(
