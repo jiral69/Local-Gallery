@@ -27,7 +27,7 @@ const __dirname = path.dirname(__filename);
 //this one works depending on the operating system, so it doesnt crash when we switch to some diffrent os
 const MEDIA_DIR = path.join(__dirname, 'media');
 
-
+app.use(express.static(path.join(__dirname, '../client/dist')));
 
 app.use('/media', express.static(MEDIA_DIR));
 
