@@ -1,0 +1,10 @@
+directories:
+  output: dist
+  buildResources: build
+appId: com.localgallery.app
+productName: Local Gallery
+asar: false
+win:
+  target: dir
+files: []
+electronVersion: 45.2.1

@@ -3,13 +3,11 @@
   "version": "1.0.0",
   "main": "main.js",
   "type": "module",
-
-  
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node index.js",
-    "electron": "electron ."
-  
+    "electron": "electron .",
+    "dist": "electron-builder --dir"
   },
   "keywords": [],
   "author": "",
@@ -22,6 +20,15 @@
     "multer": "^2.5.0"
   },
   "devDependencies": {
-    "electron": "^45.2.1"
+    "electron": "^45.2.1",
+    "electron-builder": "^26.18.0"
+  },
+  "build": {
+    "appId": "com.localgallery.app",
+    "productName": "Local Gallery",
+    "asar": false,
+    "win": {
+      "target": "dir"
+    }
   }
 }
