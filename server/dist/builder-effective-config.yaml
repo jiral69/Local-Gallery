@@ -5,6 +5,6 @@ appId: com.localgallery.app
 productName: Local Gallery
 asar: false
 win:
-  target: dir
+  target: portable
 files: []
 electronVersion: 45.2.1
