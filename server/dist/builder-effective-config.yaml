@@ -5,6 +5,12 @@ appId: com.localgallery.app
 productName: Local Gallery
 asar: false
 win:
-  target: portable
+  target: nsis
+  icon: icon.ico
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
 files: []
 electronVersion: 45.2.1
