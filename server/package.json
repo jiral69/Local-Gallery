@@ -27,6 +27,10 @@
     "appId": "com.localgallery.app",
     "productName": "Local Gallery",
     "asar": false,
+    "files": [
+      "**/*",
+      "react-build/**/*"
+  ],
     "win": {
       "target": "nsis",
       "icon": "icon.ico"

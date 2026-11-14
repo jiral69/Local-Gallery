@@ -4,6 +4,10 @@ directories:
 appId: com.localgallery.app
 productName: Local Gallery
 asar: false
+files:
+  - filter:
+      - '**/*'
+      - react-build/**/*
 win:
   target: nsis
   icon: icon.ico
@@ -12,5 +16,4 @@ nsis:
   allowToChangeInstallationDirectory: true
   createDesktopShortcut: true
   createStartMenuShortcut: true
-files: []
 electronVersion: 45.2.1
