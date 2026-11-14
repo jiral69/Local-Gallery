@@ -9,6 +9,7 @@ function createWindow() {
     height: 820,
     autoHideMenuBar: true, // Hides the default File/Edit top menu bar
     backgroundColor: '#121214',
+    icon: path.join(__dirname, 'icon.ico'),
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true
